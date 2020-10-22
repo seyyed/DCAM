@@ -1,0 +1,53 @@
+package src.My.rules
+
+//declare any global variables here
+import My.Project.Thesis.Ontology.ControllerFact;
+import My.Project.Thesis.Ontology.PCState;
+import My.Project.Thesis.Ontology.CommandTypes;
+import function My.prototype.DroolsUtility.help;
+import My.Project.Thesis.Ontology.ConversationTypes;
+
+rule "Adapt Down Holon"
+
+    when
+        $f:ControllerFact(isGoodCondition==true)
+        and
+        $s:PCState (load>$f.maxLoad, convType==ConversationTypes.monitoring)
+    then
+		$f.needsChangeDown=true;
+		$f.isGoodCondition=false;
+		help(drools,$f.ID,$s);
+end
+rule "Adapt Up Holon"
+
+    when
+        $f:ControllerFact(isGoodCondition==true)
+        and
+        $s:PCState(load<$f.maxLoad+0.01)
+    then
+	    $f.needsChangeUp=true;
+		$f.isGoodCondition=false;
+		help(drools,$f.ID,$s);
+end
+
+
+rule "Accept memebership join proposal"
+    when
+        $f:ControllerFact(isGoodCondition==true)
+        and
+        fm:PCState( convType == ConversationTypes.acceptJoinProposal)
+    then
+        $f.isacceptedProposal=true;
+        $f.isGoodCondition=false;
+        help(drools,$f.ID,fm,$f);
+end
+rule "Evaluate emergent proposal"
+    when
+        $f:ControllerFact(isGoodCondition==true)
+        and
+        fm:PCState( convType == ConversationTypes.emergent)
+    then
+        $f.isacceptedProposal=true;
+        $f.isGoodCondition=false;
+        help(drools,fm.ID,fm);
+end

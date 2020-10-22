@@ -1,0 +1,75 @@
+package src.My.rules
+
+
+import My.Project.Thesis.Ontology.ControllerFact;
+import My.Project.Thesis.Ontology.DeviceState;
+import My.Project.Thesis.Ontology.DeviceInstruct;
+import My.Project.Thesis.Ontology.CommandTypes;
+import function My.prototype.DroolsUtility.help;
+
+rule "Adapt Down HD"
+
+    when
+        $f:ControllerFact(isGoodCondition==true)
+        and
+        $s:DeviceState(time > 68400 , time < 82800)
+
+    then
+		$f.needsChangeDown=true;
+		$f.isGoodCondition=false;
+		$f.maxLoad=0;
+		help(drools,$f.ID,$s);
+end
+rule "Adapt Up HD"
+
+    when
+        ($s:DeviceState( time >= 82800)
+        or
+        $s:DeviceState(time <= 68400))
+        and
+        $f:ControllerFact(isGoodCondition==true, maxLoad==0)
+
+    then
+	    $f.needsChangeUp=true;
+		$f.isGoodCondition=false;
+		$f.maxLoad=1;
+		help(drools,$f.ID,$s);
+end
+
+rule "Instr Down HD"
+    when
+      $f:ControllerFact(isGoodCondition==true)
+        and
+        $i:DeviceInstruct(cmd==CommandTypes.change,params<0.0)
+        and
+        $s:DeviceState(load>0)
+    then
+          $f.needsChangeDown=true;
+		$f.isGoodCondition=false;
+		help(drools,$f.ID,$s);
+end
+rule "Instr Up HD"
+    when
+      $f:ControllerFact(isGoodCondition==true)
+            and(
+       ( $i:DeviceInstruct(cmd==CommandTypes.change,time <= 68400,params>0.0)
+     or
+        $i:DeviceInstruct(cmd==CommandTypes.change, time > 82800,params>0.0))
+        and
+                 $s:DeviceState(load<$f.maxLoad))
+    then
+		$f.needsChangeUp=true;
+		$f.isGoodCondition=false;
+		help(drools,$f.ID,$s);
+end
+rule "Instr changeMax HD"
+    when
+      $f:ControllerFact(isGoodCondition==true)
+                and
+         $s:DeviceState(0<$f.maxLoad)
+
+    then
+        $f.needsChangeLoad=true;
+		$f.isGoodCondition=false;
+		help(drools,$f.ID,$s);
+end

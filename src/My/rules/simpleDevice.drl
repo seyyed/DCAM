@@ -1,0 +1,58 @@
+package src.My.rules
+
+//declare any global variables here
+import My.Project.Thesis.Ontology.ControllerFact;
+import My.Project.Thesis.Ontology.DeviceInstruct;
+import My.Project.Thesis.Ontology.DeviceState;
+import My.Project.Thesis.Ontology.CommandTypes;
+import function My.prototype.DroolsUtility.help;
+
+
+rule "Instr Down simple"
+    when
+      $f:ControllerFact(isGoodCondition==true)
+                and
+        $d:DeviceInstruct(cmd==CommandTypes.change ,params<=0.0)
+     
+    then
+        $f.needsChangeDown=true;
+		$f.isGoodCondition=false;
+		help(drools,$f.ID,$d);
+end
+rule "Instr Up simple"
+    when
+      $f:ControllerFact(isGoodCondition==true)
+                and
+
+        $d:DeviceInstruct(cmd==CommandTypes.change ,params>0.0)
+        and
+        $s:DeviceState()
+    then
+		$f.needsChangeUp=true;
+		$f.isGoodCondition=false;
+		help(drools,$f.ID,$s);
+end
+rule "change Storage simple"
+    when
+      $f:ControllerFact(isGoodCondition==true)
+                and
+        $d:DeviceInstruct( cmd==CommandTypes.changeStorage)
+        
+    then
+		$f.needsChangeStoage=true;
+		$f.isGoodCondition=false;
+		help(drools,$f.ID,$d);
+end
+rule "Instr changeMax simple"
+    when
+      $f:ControllerFact(isGoodCondition==true)
+                and
+        $d:DeviceInstruct(cmd==CommandTypes.changeMax )
+            and
+         $s:DeviceState(load>=$f.maxLoad)
+
+    then
+        $f.needsChangeLoad=true;
+		$f.isGoodCondition=false;
+		help(drools,$f.ID,$d);
+end

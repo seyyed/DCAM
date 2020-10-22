@@ -1,0 +1,50 @@
+package src.My.rules
+//declare any global variables here
+import My.Project.Thesis.Ontology.ControllerFact;
+import My.Project.Thesis.Ontology.DeviceState;
+import My.Project.Thesis.Ontology.DeviceInstruct;
+import My.Project.Thesis.Ontology.CommandTypes;
+import function My.prototype.DroolsUtility.help;
+
+rule "Adapt Down L"
+
+    when
+          $f:ControllerFact(isGoodCondition==true)
+            and
+        $s:DeviceState(time > 21600 , time < 64800)
+    then
+		$f.needsChangeDown=true;
+		$f.isGoodCondition=false;
+		$f.maxLoad=0;
+		help(drools,$f.ID,$s);
+end
+rule "Adapt Up L"
+
+    when
+
+                ($s:DeviceState( time >= 64800)
+                or
+                $s:DeviceState(time <= 21600 ))
+
+                and
+                $f:ControllerFact(isGoodCondition==true,maxLoad==0)
+
+    then
+	    $f.needsChangeUp=true;
+		$f.isGoodCondition=false;
+		$f.maxLoad=1;
+		help(drools,$f.ID,$s);
+end
+
+
+rule "Instr changeMax HD"
+    when
+      $f:ControllerFact(isGoodCondition==true)
+                and
+         $s:DeviceState($f.maxLoad>0)
+
+    then
+        $f.needsChangeLoad=true;
+		$f.isGoodCondition=false;
+		help(drools,$f.ID,$s);
+end

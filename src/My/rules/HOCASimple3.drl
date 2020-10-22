@@ -1,0 +1,134 @@
+package src.My.rules
+//declare any global variables here
+import My.Project.Thesis.Ontology.PCState;
+import My.Project.Thesis.Ontology.ControllerHeadHolonFact;
+import My.Project.Thesis.Ontology.ControllerFact;
+import My.Project.Thesis.Ontology.CommandTypes;
+import My.Project.Thesis.Ontology.GridMemberType;
+import function My.prototype.DroolsUtility.help;
+import My.Project.Thesis.Ontology.ConversationTypes;
+import My.Project.Thesis.Ontology.LoadProposal;
+import My.Project.Thesis.Ontology.LoadProposalItem;
+import java.lang.Number;
+import java.util.List;
+
+rule "change source to Producer"
+    when
+      f:ControllerFact(isGoodCondition==true)
+            and
+        s:PCState(load<totalProduceLoads , currentSource!=GridMemberType.Producer, convType==ConversationTypes.monitoring)
+    then
+        s.currentSource=GridMemberType.Producer;
+        f.isGoodCondition=false;
+        f.needsChangeSource=true;
+        help(drools,f.ID,s);
+end
+rule "change source to Storage"
+    when
+      f:ControllerFact(isGoodCondition==true)
+            and
+        s:PCState(load<=totalStorageLoads,load>=totalProduceLoads , currentSource!=GridMemberType.Storage , convType==ConversationTypes.monitoring)
+    then
+        s.currentSource=GridMemberType.Storage;
+        f.isGoodCondition=false;
+        help(drools,f.ID,s);
+        f.needsChangeSource=true;
+end
+rule "change source to Grid"
+    when
+     f:ControllerFact(isGoodCondition==true)
+                and
+        s:PCState(load>0,load>=totalStorageLoads,load>=totalProduceLoads, currentSource!=GridMemberType.GRID, convType==ConversationTypes.monitoring)
+    then
+        s.currentSource=GridMemberType.GRID;
+        f.isGoodCondition=false;
+        help(drools,f.ID,s);
+        f.needsChangeSource=true;
+end
+
+
+rule "Adapt Down House"
+
+    when
+        $f:ControllerFact(isGoodCondition==true)
+        and
+        $s:PCState (load>=$f.maxLoad, convType==ConversationTypes.monitoring)
+    then
+		$f.needsChangeDown=true;
+		$f.isGoodCondition=false;
+		help(drools,$f.ID,$s);
+end
+rule "Adapt Up House"
+
+    when
+        $f:ControllerFact(isGoodCondition==true)
+        and
+        $s:PCState(load<$f.maxLoad, convType==ConversationTypes.monitoring)
+    then
+	    $f.needsChangeUp=true;
+		$f.isGoodCondition=false;
+		help(drools,$f.ID,$s);
+end
+
+rule "Evaluate Holon head"
+    when
+        f:ControllerFact(isGoodCondition==true)
+                    and
+        h:ControllerHeadHolonFact( propsedFact.totalStorageLoads>1000, propsedFact.convType == ConversationTypes.join)
+and
+ s:PCState( convType==ConversationTypes.monitoring)
+    then
+        f.isGoodCondition=false;
+        f.isacceptedProposal=true;
+        help(drools,f.ID,h,s);
+end
+
+rule "Evaluate emergent response"
+    when
+        f:ControllerFact(isGoodCondition==true)
+                    and
+        h: LoadProposal(items.size()>0)
+
+    then
+        f.isGoodCondition=false;
+        h.selected=true;
+        help(drools,h.ID ,h);
+end
+
+rule "accept emergent request"
+    when
+        f:ControllerFact(isGoodCondition==true)
+                    and
+        h: LoadProposalItem(isPush==false)
+        and
+        s:PCState(h.load+load+10<totalStorageLoads, convType==ConversationTypes.monitoring)
+    then
+    f.isGoodCondition=false;
+        h.accepted=true;
+        help(drools,h.id ,h);
+end
+
+rule "pushload"
+    when
+    f:ControllerFact(isGoodCondition==true)
+                and
+        h: LoadProposalItem(isPush==true)
+    then
+    f.isGoodCondition=false;
+        h.accepted=true;
+        help(drools,h.id ,h);
+end
+
+rule "Left Holon"
+
+    when
+        f:ControllerFact(isGoodCondition==true)
+        and
+        h:PCState( totalStorageLoads<500,  convType==ConversationTypes.holonMonitoring)
+        and
+         s:PCState( convType==ConversationTypes.monitoring)
+    then
+	    f.leftHolon=true;
+		f.isGoodCondition=false;
+		help(drools,f.ID,h,s);
+end
